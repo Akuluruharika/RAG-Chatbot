@@ -13,19 +13,15 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 # -----------------------------
 st.set_page_config(
     page_title="Flick AI",
-    page_icon="🚀",
+    page_icon=" ",
     layout="wide"
 )
-
-# -----------------------------
-# HEADER
-# -----------------------------
 col1, col2 = st.columns([6, 1])
 
 with col1:
     st.markdown("""
     <h1 style='text-align:center;'>
-    🚀 Flick AI
+     Flick AI
     </h1>
     """, unsafe_allow_html=True)
 
@@ -230,7 +226,7 @@ Answer:
                     prompt
                 )
             st.markdown(
-                "## 🤖 AI Response"
+                "##  AI Response"
             )
 
             if hasattr(
@@ -249,7 +245,7 @@ Answer:
                 )
 
             st.markdown(
-                "## 📚 Retrieved Sources"
+                "##  Retrieved Sources"
             )
 
             for i, doc in enumerate(
@@ -267,5 +263,5 @@ Answer:
     except Exception as e:
 
         st.error(
-            f"❌ Error: {str(e)}"
+            f" Error: {str(e)}"
         )
