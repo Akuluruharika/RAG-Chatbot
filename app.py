@@ -6,7 +6,8 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 
-from langchain_google_genai import ChatGoogleGenerativeAI
+from openai import OpenAI
+
 
 # -----------------------------
 # PAGE CONFIG
@@ -193,50 +194,29 @@ if uploaded_file:
                     ]
                 )
                            
-            llm = ChatGoogleGenerativeAI(
-                model="gemini-2.0-flash",
-                google_api_key=st.secrets["GEMINI_API_KEY"],
-                temperature=0
-            )
+            client = OpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key=st.secrets["OPENROUTER_API_KEY"],
+)
 
-            prompt = f"""
-You are Flick AI, an intelligent RAG-Based Document Assistant.
+response = client.chat.completions.create(
+    model="mistralai/mistral-7b-instruct:free",
+    messages=[
+        {
+            "role": "system",
+            "content": "You are Flick AI, a helpful RAG-based document assistant."
+        },
+        {
+            "role": "user",
+            "content": prompt
+        }
+    ]
+)
 
-Use ONLY the information provided in the context below.
+answer = response.choices[0].message.content
 
-If the answer is not available in the context,
-reply with:
-
-"I couldn't find that information in the uploaded document."
-
-Context:
-{context}
-
-Question:
-{query}
-
-Answer:
-"""
-
-            with st.spinner(
-                "Generating Answer..."
-            ):
-
-                response = llm.invoke(
-                    prompt
-                )
-            st.markdown(
-                "##  AI Response"
-            )
-
-            if hasattr(
-                response,
-                "content"
-            ):
-
-                st.success(
-                    response.content
-                )
+st.markdown("## 🤖 AI Response")
+st.success(answer)
 
             else:
 
