@@ -5,14 +5,15 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
-from langchain_ollama import ChatOllama
+
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 # -----------------------------
 # PAGE CONFIG
 # -----------------------------
 st.set_page_config(
     page_title="Flick AI",
-    page_icon=" ",
+    page_icon="🚀",
     layout="wide"
 )
 
@@ -24,13 +25,12 @@ col1, col2 = st.columns([6, 1])
 with col1:
     st.markdown("""
     <h1 style='text-align:center;'>
-      Flick AI
+    🚀 Flick AI
     </h1>
-   
     """, unsafe_allow_html=True)
 
 with col2:
-    dark_mode = st.toggle(" ")
+    dark_mode = st.toggle("🌙")
 
 # -----------------------------
 # THEME
@@ -41,16 +41,16 @@ if dark_mode:
     <style>
 
     .stApp {
-        background-color: #0E1117;
-        color: white;
+        background-color:#0E1117;
+        color:white;
     }
 
-    h1, h2, h3, p, div, label {
-        color: white !important;
+    h1,h2,h3,p,div,label{
+        color:white !important;
     }
 
-    .stTextInput input {
-        color: white !important;
+    .stTextInput input{
+        color:white !important;
     }
 
     </style>
@@ -61,17 +61,17 @@ else:
     st.markdown("""
     <style>
 
-    .stApp {
-        background-color: white;
-        color: black;
+    .stApp{
+        background:white;
+        color:black;
     }
 
-    h1, h2, h3, p, div, label {
-        color: black !important;
+    h1,h2,h3,p,div,label{
+        color:black !important;
     }
 
-    .stTextInput input {
-        color: black !important;
+    .stTextInput input{
+        color:black !important;
     }
 
     </style>
@@ -81,7 +81,7 @@ else:
 # PDF UPLOAD
 # -----------------------------
 uploaded_file = st.file_uploader(
-    " Upload PDF",
+    "📄 Upload PDF",
     type=["pdf"]
 )
 
@@ -89,37 +89,47 @@ if uploaded_file:
 
     try:
 
-        # Create folders
-        os.makedirs("uploads", exist_ok=True)
-        os.makedirs("chroma_db", exist_ok=True)
+        os.makedirs(
+            "uploads",
+            exist_ok=True
+        )
 
-        # Save PDF
+        os.makedirs(
+            "chroma_db",
+            exist_ok=True
+        )
+
         pdf_path = os.path.join(
             "uploads",
             uploaded_file.name
         )
 
-        with open(pdf_path, "wb") as f:
-            f.write(uploaded_file.getbuffer())
+        with open(pdf_path,"wb") as f:
+            f.write(
+                uploaded_file.getbuffer()
+            )
 
-        st.success(" PDF Uploaded Successfully")
+        st.success(
+            "✅ PDF Uploaded Successfully"
+        )
 
-        # -----------------------------
-        # LOAD PDF
-        # -----------------------------
-        with st.spinner("Loading PDF..."):
+        with st.spinner(
+            "Loading PDF..."
+        ):
 
-            loader = PyPDFLoader(pdf_path)
+            loader = PyPDFLoader(
+                pdf_path
+            )
+
             documents = loader.load()
 
         st.success(
-            f" PDF Loaded ({len(documents)} pages)"
+            f"✅ PDF Loaded ({len(documents)} pages)"
         )
 
-        # -----------------------------
-        # SPLIT TEXT
-        # -----------------------------
-        with st.spinner("Creating chunks..."):
+        with st.spinner(
+            "Creating Chunks..."
+        ):
 
             splitter = RecursiveCharacterTextSplitter(
                 chunk_size=1000,
@@ -131,23 +141,21 @@ if uploaded_file:
             )
 
         st.success(
-            f" Created {len(docs)} chunks"
+            f"✅ {len(docs)} Chunks Created"
         )
 
-        # -----------------------------
-        # EMBEDDINGS
-        # -----------------------------
-        with st.spinner("Generating embeddings..."):
+        with st.spinner(
+            "Generating Embeddings..."
+        ):
 
             embeddings = HuggingFaceEmbeddings(
                 model_name="sentence-transformers/all-MiniLM-L6-v2"
             )
 
-        st.success("Embeddings Ready")
+        st.success(
+            "✅ Embeddings Ready"
+        )
 
-        # -----------------------------
-        # VECTOR DATABASE
-        # -----------------------------
         with st.spinner(
             "Creating Vector Database..."
         ):
@@ -159,14 +167,11 @@ if uploaded_file:
             )
 
         st.success(
-            " Vector Database Created"
+            "✅ Vector Database Created"
         )
 
-        # -----------------------------
-        # QUESTION INPUT
-        # -----------------------------
         query = st.text_input(
-            " Ask a question about the PDF"
+            "💬 Ask a question about the PDF"
         )
 
         if query:
@@ -176,7 +181,9 @@ if uploaded_file:
             ):
 
                 retriever = vectorstore.as_retriever(
-                    search_kwargs={"k": 3}
+                    search_kwargs={
+                        "k":3
+                    }
                 )
 
                 relevant_docs = retriever.invoke(
@@ -189,18 +196,22 @@ if uploaded_file:
                         for doc in relevant_docs
                     ]
                 )
-
-            # -----------------------------
-            # MISTRAL
-            # -----------------------------
-            llm = ChatOllama(
-                model="mistral"
+                           
+            llm = ChatGoogleGenerativeAI(
+                model="gemini-1.5-flash",
+                google_api_key=st.secrets["GEMINI_API_KEY"],
+                temperature=0
             )
 
             prompt = f"""
-You are Flick AI.
+You are Flick AI, an intelligent RAG-Based Document Assistant.
 
-Answer ONLY using the context below.
+Use ONLY the information provided in the context below.
+
+If the answer is not available in the context,
+reply with:
+
+"I couldn't find that information in the uploaded document."
 
 Context:
 {context}
@@ -212,37 +223,33 @@ Answer:
 """
 
             with st.spinner(
-                "Generating answer..."
+                "Generating Answer..."
             ):
 
                 response = llm.invoke(
                     prompt
                 )
-
-            # -----------------------------
-            # DISPLAY ANSWER
-            # -----------------------------
             st.markdown(
-                "## AI Response"
+                "## 🤖 AI Response"
             )
 
             if hasattr(
                 response,
                 "content"
             ):
+
                 st.success(
                     response.content
                 )
+
             else:
+
                 st.success(
                     str(response)
                 )
 
-            # -----------------------------
-            # SOURCES
-            # -----------------------------
             st.markdown(
-                "## Retrieved Sources"
+                "## 📚 Retrieved Sources"
             )
 
             for i, doc in enumerate(
@@ -252,6 +259,7 @@ Answer:
                 with st.expander(
                     f"Source {i+1}"
                 ):
+
                     st.write(
                         doc.page_content
                     )
@@ -259,5 +267,5 @@ Answer:
     except Exception as e:
 
         st.error(
-            f"Error: {str(e)}"
+            f"❌ Error: {str(e)}"
         )
