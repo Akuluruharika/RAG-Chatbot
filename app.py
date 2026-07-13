@@ -77,7 +77,7 @@ else:
 # PDF UPLOAD
 # -----------------------------
 uploaded_file = st.file_uploader(
-    "📄 Upload PDF",
+    "Upload PDF",
     type=["pdf"]
 )
 
@@ -167,7 +167,7 @@ if uploaded_file:
         )
 
         query = st.text_input(
-            "💬 Ask a question about the PDF"
+            "Ask a question about the PDF"
         )
 
         if query:
@@ -194,7 +194,7 @@ if uploaded_file:
                 )
                            
             llm = ChatGoogleGenerativeAI(
-                model="gemini-1.5-flash",
+                model="gemini-2.0-flash",
                 google_api_key=st.secrets["GEMINI_API_KEY"],
                 temperature=0
             )
