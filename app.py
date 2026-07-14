@@ -1,14 +1,6 @@
 import os
 import streamlit as st
 
-from langchain_community.document_loaders import PyPDFLoader
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_chroma import Chroma
-
-from openai import OpenAI
-
-
 # -----------------------------
 # PAGE CONFIG
 # -----------------------------
@@ -17,231 +9,46 @@ st.set_page_config(
     page_icon=" ",
     layout="wide"
 )
-col1, col2 = st.columns([6, 1])
-
-with col1:
-    st.markdown("""
-    <h1 style='text-align:center;'>
-     Flick AI
-    </h1>
-    """, unsafe_allow_html=True)
-
-with col2:
-    dark_mode = st.toggle("🌙")
 
 # -----------------------------
-# THEME
+# TITLE
 # -----------------------------
-if dark_mode:
+st.markdown(
+    """
+    <h1 style='text-align:center;'> Flick AI</h1>
+    <h4 style='text-align:center;color:gray;'>
+    AI-Powered RAG Document Assistant
+    </h4>
+    """,
+    unsafe_allow_html=True
+)
 
-    st.markdown("""
-    <style>
-
-    .stApp {
-        background-color:#0E1117;
-        color:white;
-    }
-
-    h1,h2,h3,p,div,label{
-        color:white !important;
-    }
-
-    .stTextInput input{
-        color:white !important;
-    }
-
-    </style>
-    """, unsafe_allow_html=True)
-
-else:
-
-    st.markdown("""
-    <style>
-
-    .stApp{
-        background:white;
-        color:black;
-    }
-
-    h1,h2,h3,p,div,label{
-        color:black !important;
-    }
-
-    .stTextInput input{
-        color:black !important;
-    }
-
-    </style>
-    """, unsafe_allow_html=True)
+st.write("---")
 
 # -----------------------------
 # PDF UPLOAD
 # -----------------------------
 uploaded_file = st.file_uploader(
-    "Upload PDF",
+    "📄 Upload a PDF",
     type=["pdf"]
 )
 
 if uploaded_file:
 
-    try:
+    os.makedirs("uploads", exist_ok=True)
 
-        os.makedirs(
-            "uploads",
-            exist_ok=True
-        )
+    pdf_path = os.path.join(
+        "uploads",
+        uploaded_file.name
+    )
 
-        os.makedirs(
-            "chroma_db",
-            exist_ok=True
-        )
+    with open(pdf_path, "wb") as f:
+        f.write(uploaded_file.getbuffer())
 
-        pdf_path = os.path.join(
-            "uploads",
-            uploaded_file.name
-        )
+    st.success("✅ PDF Uploaded Successfully")
 
-        with open(pdf_path,"wb") as f:
-            f.write(
-                uploaded_file.getbuffer()
-            )
+    st.info(f" File Name: {uploaded_file.name}")
 
-        st.success(
-            "✅ PDF Uploaded Successfully"
-        )
+    st.info(f" File Size: {round(uploaded_file.size / 1024,2)} KB")
 
-        with st.spinner(
-            "Loading PDF..."
-        ):
-
-            loader = PyPDFLoader(
-                pdf_path
-            )
-
-            documents = loader.load()
-
-        st.success(
-            f"✅ PDF Loaded ({len(documents)} pages)"
-        )
-
-        with st.spinner(
-            "Creating Chunks..."
-        ):
-
-            splitter = RecursiveCharacterTextSplitter(
-                chunk_size=1000,
-                chunk_overlap=200
-            )
-
-            docs = splitter.split_documents(
-                documents
-            )
-
-        st.success(
-            f"✅ {len(docs)} Chunks Created"
-        )
-
-        with st.spinner(
-            "Generating Embeddings..."
-        ):
-
-            embeddings = HuggingFaceEmbeddings(
-                model_name="sentence-transformers/all-MiniLM-L6-v2"
-            )
-
-        st.success(
-            "✅ Embeddings Ready"
-        )
-
-        with st.spinner(
-            "Creating Vector Database..."
-        ):
-
-            vectorstore = Chroma.from_documents(
-                documents=docs,
-                embedding=embeddings,
-                persist_directory="chroma_db"
-            )
-
-        st.success(
-            "✅ Vector Database Created"
-        )
-
-        query = st.text_input(
-            "Ask a question about the PDF"
-        )
-
-        if query:
-
-            with st.spinner(
-                "Searching document..."
-            ):
-
-                retriever = vectorstore.as_retriever(
-                    search_kwargs={
-                        "k":3
-                    }
-                )
-
-                relevant_docs = retriever.invoke(
-                    query
-                )
-
-                context = "\n\n".join(
-                    [
-                        doc.page_content
-                        for doc in relevant_docs
-                    ]
-                )
-                           
-            client = OpenAI(
-    base_url="https://openrouter.ai/api/v1",
-    api_key=st.secrets["OPENROUTER_API_KEY"],
-)
-
-response = client.chat.completions.create(
-    model="mistralai/mistral-7b-instruct:free",
-    messages=[
-        {
-            "role": "system",
-            "content": "You are Flick AI, a helpful RAG-based document assistant."
-        },
-        {
-            "role": "user",
-            "content": prompt
-        }
-    ]
-)
-
-answer = response.choices[0].message.content
-
-st.markdown("## 🤖 AI Response")
-st.success(answer)
-
-            else:
-
-                st.success(
-                    str(response)
-                )
-
-            st.markdown(
-                "##  Retrieved Sources"
-            )
-
-            for i, doc in enumerate(
-                relevant_docs
-            ):
-
-                with st.expander(
-                    f"Source {i+1}"
-                ):
-
-                    st.write(
-                        doc.page_content
-                    )
-
-    except Exception as e:
-
-        st.error(
-            f" Error: {str(e)}"
-        )
+    st.write("### PDF is ready for processing.")
